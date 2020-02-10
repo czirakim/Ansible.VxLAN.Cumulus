@@ -1,0 +1,76 @@
+---
+- hosts: leaf
+  gather_facts: no
+  vars_files:
+    - group_vars/vars
+  tasks:
+    - name: add clag
+      nclu:
+        commands:         
+             - add hostname 'Leaf{{id}}'
+             - add clag port bond bond'{{clagid}}' interface swp3 clag-id '{{clagid}}'     
+        commit: true
+
+    - name: add clag role 
+      nclu: 
+        template: |
+          {% if id % 2 == 0 %}
+          add clag peer sys-mac 44:38:39:FF:01:01 interface swp5-6 secondary 
+          {% else %}
+          add clag peer sys-mac 44:38:39:FF:01:01 interface swp5-6 primary
+          {% endif %}
+        atomic: true
+ 
+    
+    - name: create vlans
+      nclu:
+        template: |
+          {% for item in vlans.values() %}
+          add vlan "{{item.id}}"
+          add bond bond"{{clagid}}" bridge trunk vlans "{{item.id}}"
+          add vlan "{{item.id}}" ip address 192.168."{{item.id}}".25"{{id}}"/24
+          add vlan "{{item.id}}" ip address-virtual 00:00:5e:00:01:"{{item.number}}" 192.168."{{item.id}}".254/24
+          {% endfor %}
+        atomic: true
+          
+    - name: bgp evpn
+      tags: bgp
+      nclu:
+        commands:
+             - add loopback lo ip address '10.1.1.{{id}}/32'
+             - add bgp autonomous-system '6500{{id}}'
+             - add bgp neighbor 'swp1-{{spinenumber}}' interface remote-as external
+             - add bgp l2vpn evpn neighbor 'swp1-{{spinenumber}}' activate
+             - add bgp l2vpn evpn advertise-all-vni
+             - add bgp network '10.1.1.{{id}}/32'
+        commit: true
+
+### create anycast for each lag pair   
+    - name: Vtep anycast   
+      tags: anycast
+      nclu:
+        template: |
+          {% set y = id + 1 %} 
+          {% if id % 2 == 0 %}
+          add loopback lo clag vxlan-anycast-ip 10.10.10."{{id}}"
+          add bgp network 10.10.10."{{id}}"/32
+          {% else %}
+          add loopback lo clag vxlan-anycast-ip 10.10.10."{{y}}"
+          add bgp network 10.10.10."{{y}}"/32
+          {% endif %}
+        atomic: true
+
+    - name: vxlan
+      tags: vxlan
+      nclu:
+        template: |
+          {% for item in vlans.values() %}
+          add vxlan vni"{{item.id}}" vxlan id "{{item.id}}"
+          add vxlan vni"{{item.id}}" bridge access "{{item.id}}"
+          add vxlan vni"{{item.id}}" bridge learning off
+          add vxlan vni"{{item.id}}" stp bpduguard
+          add vxlan vni"{{item.id}}" stp portbpdufilter
+          add vxlan vni"{{item.id}}" vxlan local-tunnelip 10.1.1."{{id}}"
+          add vxlan vni"{{item.id}}" bridge arp-nd-suppress on
+          {% endfor %} 
+        atomic: true 

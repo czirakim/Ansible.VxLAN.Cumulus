@@ -1,0 +1,8 @@
+[leaf]
+leaf1 ansible_ssh_host=10.0.0.1 ansible_ssh_user=cumulus ansible_ssh_pass=CumulusLinux! id=1
+leaf2 ansible_ssh_host=10.0.0.2 ansible_ssh_user=cumulus ansible_ssh_pass=CumulusLinux! id=2
+leaf3 ansible_ssh_host=10.0.0.5 ansible_ssh_user=cumulus ansible_ssh_pass=CumulusLinux! id=3
+
+[spine]
+spine1 ansible_ssh_host=10.0.0.4 ansible_ssh_user=cumulus ansible_ssh_pass=CumulusLinux! id=1
+spine2 ansible_ssh_host=10.0.0.6 ansible_ssh_user=cumulus ansible_ssh_pass=CumulusLinux! id=2

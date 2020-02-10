@@ -1,0 +1,12 @@
+#this is for leaf switches
+clagid: 1
+
+vlans:
+  vlan100:
+    id: '100'
+    number: '01'
+  vlan200:
+    id: '200'
+    number: '02'
+
+

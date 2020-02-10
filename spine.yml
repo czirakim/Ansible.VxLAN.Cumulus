@@ -1,0 +1,16 @@
+---
+- hosts: spine
+  gather_facts: no
+  vars_files:
+    - group_vars/vars
+  tasks:
+    - name: bgp&evpn
+      nclu:
+        commands:         
+             - add hostname 'Spine{{id}}'
+             - add loopback lo ip address '10.5.5.{{id}}/32'
+             - add bgp autonomous-system '6555{{id}}'
+             - add bgp neighbor 'swp1-{{leafnumber}}' interface remote-as external
+             - add bgp l2vpn evpn neighbor 'swp1-{{leafnumber}}' activate
+             - add bgp network '10.5.5.{{id}}/32'
+        commit: true
